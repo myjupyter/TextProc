@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import re
+import math
 
 FILE = './stih.txt'
 
@@ -33,9 +34,6 @@ def create_ngram_from_text(data, n):
 def create_freq_dict(words):
     frequency = {}
     for word in words:
-        if len(word) == 0:
-            continue
-
         if frequency.get(word) is None:
             frequency[word] = 1
         else:
@@ -106,18 +104,18 @@ class Text():
     def next_word(self, sentence, n):
         words = create_words(sentence) 
         if len(words) < n:
-            raise RuntimeError('ngrams has not enough words')
+            raise RuntimeError('ngrams have no enough words')
         
         words = words[-n:]
         
-        max_p = 0
+        max_p = - 1 << 60
         that_word = ""
          
         for word in self.words:
-            res = self.P(word) 
+            res = math.log(self.P(word)) 
             for ngram_word in words:
                 #print('ng', ngram_word, word, self.P_cond((ngram_word, word)))
-                res *= self.P_cond((ngram_word, word))
+                res += math.log(self.P_cond((ngram_word, word)))
             if max_p < res:
                 max_p = res
                 that_word = word
@@ -130,9 +128,9 @@ class Text():
 def main():
     text = Text('stih.txt', 2, 1)
 
-    sentence = 'это птица-синица'
+    sentence = 'джек'
     for i in range(10):
-        sentence += ' ' + text.next_word(sentence, 3)
+        sentence += ' ' + text.next_word(sentence, 1)
 
     print(sentence)
     
