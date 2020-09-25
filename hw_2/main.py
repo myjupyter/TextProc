@@ -9,6 +9,9 @@ FILE = './stih.txt'
 def filter(data):
     return re.sub(' +', ' ',re.sub('[-!$…”“%^&*()_+|~=`{}\[\]:";\'<>?,.\/\\n\\r\\t#]', ' ',data)).lower()
 
+def create_words(data):
+    return [word for word in filter(data).split(' ') if len(word) != 0]
+
 
 # создает N-граммы из списка слов
 def create_ngram(words, n):
@@ -23,7 +26,7 @@ def create_ngram(words, n):
 
 # создает N-граммы из текста с предваритеьной обработкой
 def create_ngram_from_text(data, n): 
-    words = filter(data).split(' ')
+    words = create_words(data)
     return create_ngram(words, n)
 
 # создает словарь частот слов/словосочетаний и т.д.
@@ -64,14 +67,12 @@ def cond_p_Lid(ngrams_dict, words_dict, l=1):
             cond[(second, first)] = (ngram_count + l) / (word_count + l * Vb)
     return cond
 
-
-
 class Text():
     def __init__(self, filename, n = 2, l = 1):
         with open(filename) as file:
             data = file.read()
 
-        self.words = filter(data).split(' ')[:-1] 
+        self.words = create_words(data) 
         self.N = len(self.words)
         self.Lambda = l
 
@@ -103,7 +104,7 @@ class Text():
             return self.Lambda / (len(self.ngrams_freq) * self.Lambda + count_first) 
     
     def next_word(self, sentence, n):
-        words = filter(sentence).split(' ')
+        words = create_words(sentence) 
         if len(words) < n:
             raise RuntimeError('ngrams has not enough words')
         
@@ -111,15 +112,15 @@ class Text():
         
         max_p = 0
         that_word = ""
+         
         for word in self.words:
             res = self.P(word) 
             for ngram_word in words:
+                #print('ng', ngram_word, word, self.P_cond((ngram_word, word)))
                 res *= self.P_cond((ngram_word, word))
             if max_p < res:
-                print(res, word)
                 max_p = res
                 that_word = word
-        
         return that_word
         
     def update_n(n):
@@ -127,13 +128,13 @@ class Text():
         self.freq = create_freq_dict(self.ngrams)
 
 def main():
-    text = Text('text', 2, 1)
+    text = Text('stih.txt', 2, 1)
 
-    sentence = 'конь по полю'
+    sentence = 'это птица-синица'
     for i in range(10):
         sentence += ' ' + text.next_word(sentence, 3)
 
-    print(text.words, sentence)
+    print(sentence)
     
 
 if __name__ == '__main__':
