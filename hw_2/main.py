@@ -3,13 +3,11 @@
 import re
 import math
 
-FILE = './stih.txt'
-
-
 # Очищает текст от знаков препинания и приводит в нижний регистр
 def filter(data):
     return re.sub(' +', ' ',re.sub('[-!$…”“%^&*()_+|~=`{}\[\]:";\'<>?,.\/\\n\\r\\t#]', ' ',data)).lower()
 
+# По тексту создает отфильтрованные слова, приведенные в нижний регистр
 def create_words(data):
     return [word for word in filter(data).split(' ') if len(word) != 0]
 
@@ -45,6 +43,10 @@ class Dictionary():
             self.ngrams_list.append(create_ngram(self.words, i + 1))
             self.ngrams_freq_dict_list.append(create_freq_dict(self.ngrams_list[-1]))
 
+    @property
+    def dictionary(self):
+        return self.ngrams_freq_dict_list[0]
+
     def P_Lid(self, sentence, l = 0):
         splitted_sentence = create_words(sentence)
         word_count = len(splitted_sentence)
@@ -62,7 +64,7 @@ class Dictionary():
         splitted_word     = create_words(word)
         word_count = len(splitted_sentence)
         if word_count > self.n:
-            raise AttributeError('Dictionary has only {:d}-grams'.format(word_count))
+            raise AttributeError('Dictionary has only {:d}-grams'.format(self.n))
        
         N = len(self.words)
         C_n = self.P_Lid(' '.join(splitted_sentence + splitted_word), 0) * N 
@@ -70,6 +72,27 @@ class Dictionary():
         
         return (C_n + l) / (C_n_1 + l * len(self.ngrams_freq_dict_list[word_count - 1]))
     
+    def __lambda(self, sentence):
+        splitted_sentence = create_words(sentence)
+        word_count = len(splitted_sentence)
+        if word_count > self.n:
+            raise AttributeError('Dictionary has only {:d}-grams'.format(self.n))
+       
+        processed_sentence = ' '.join(splitted_sentence)
+        C = self.ngrams_freq_dict_list[word_count - 1].get(processed_sentence)
+        N_1 = sum(map(lambda x: 1 if x[0].startswith(processed_sentence) else 0, self.ngrams_freq_dict_list[word_count]))
+        return C / (N_1 + C)
+
+    def P_WB_Cond(self, word, sentence):
+        L = self.__lambda(sentence)
+        
+        splitted_sentence = create_words(sentence)
+        new_sentence = ' '.join(splitted_sentence[-len(splitted_sentence) + 1:])
+        if new_sentence.count(' ') > 0:
+            return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_WB_Cond(word, new_sentence)
+        else:
+            return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_Lid(new_sentence, 1)
+
 
 class Text():
     def __init__(self, filename, n = 2):
@@ -79,27 +102,35 @@ class Text():
         self.n = n
         self.dictionary = Dictionary(raw_text, n)
 
-    def next_word_by_Lid_smoothing(self, sentence, l = 0): 
+    def next_word(self, sentence, method):
         max_probability = -(1 << 60)
-        max_probability_word = ""
+        max_probability_word = ''
         processed_sentence = ' '.join(create_words(sentence)[-self.n:])
-        for word in self.dictionary.words:
-            if (p := self.dictionary.P_Lid_Cond(word, processed_sentence, l)) > max_probability:
+       
+        p_cond = 0
+        print(method[0], type(method[0]))
+        if method[0] == 'Lid':
+            p_cond = self.dictionary.P_Lid_Cond
+            method = (method[1],)
+        elif method[0] == 'WB':
+            p_cond = self.dictionary.P_WB_Cond
+            method = ()
+        else:
+            raise AttributeError('Wrong mehtod')
+        
+        for word in self.dictionary.dictionary.keys():
+            if (p := p_cond(word, processed_sentence, *method)) > max_probability:
                 max_probability = p
                 max_probability_word = word
 
         return max_probability_word
 
-             
-    def next_word_by_WB_smoothing(self, sentence):
-        pass
-
 def main():
-    text = Text('big.txt', 3)
+    text = Text('stih.txt', 2)
 
-    sentence = 'А еще были'
-    for i in range(40):
-        sentence += ' ' + text.next_word_by_Lid_smoothing(sentence, 1)
+    sentence = 'дом который'
+    for i in range(20):
+        sentence += ' ' + text.next_word(sentence, ('Lid', 0))
 
     print(sentence)
 
