@@ -80,18 +80,22 @@ class Dictionary():
        
         processed_sentence = ' '.join(splitted_sentence)
         C = self.ngrams_freq_dict_list[word_count - 1].get(processed_sentence)
+
+        if C is None:
+            return 0
+
         N_1 = sum(map(lambda x: 1 if x[0].startswith(processed_sentence) else 0, self.ngrams_freq_dict_list[word_count]))
         return C / (N_1 + C)
 
     def P_WB_Cond(self, word, sentence):
         L = self.__lambda(sentence)
         
-        splitted_sentence = create_words(sentence)
-        new_sentence = ' '.join(splitted_sentence[-len(splitted_sentence) + 1:])
-        if new_sentence.count(' ') > 0:
+        if sentence.count(' ') > 0:
+            splitted_sentence = create_words(sentence)
+            new_sentence = ' '.join(splitted_sentence[-len(splitted_sentence) + 1:])
             return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_WB_Cond(word, new_sentence)
         else:
-            return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_Lid(new_sentence, 1)
+            return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_Lid(sentence, 1)
 
 
 class Text():
@@ -108,7 +112,6 @@ class Text():
         processed_sentence = ' '.join(create_words(sentence)[-self.n:])
        
         p_cond = 0
-        print(method[0], type(method[0]))
         if method[0] == 'Lid':
             p_cond = self.dictionary.P_Lid_Cond
             method = (method[1],)
@@ -126,11 +129,11 @@ class Text():
         return max_probability_word
 
 def main():
-    text = Text('stih.txt', 2)
+    text = Text('big.txt', 2)
 
-    sentence = 'дом который'
+    sentence = 'а еще'
     for i in range(20):
-        sentence += ' ' + text.next_word(sentence, ('Lid', 0))
+        sentence += ' ' + text.next_word(sentence, ('Lid', 1))
 
     print(sentence)
 
