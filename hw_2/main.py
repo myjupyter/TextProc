@@ -69,7 +69,9 @@ class Dictionary():
         N = len(self.words)
         C_n = self.P_Lid(' '.join(splitted_sentence + splitted_word), 0) * N 
         C_n_1 = self.P_Lid(' '.join(splitted_sentence), 0) * N
-        
+        if l == 0 and C_n == 0 and C_n_1 == 0:
+            return 0
+
         return (C_n + l) / (C_n_1 + l * len(self.ngrams_freq_dict_list[word_count - 1]))
     
     def __lambda(self, sentence):
@@ -129,11 +131,11 @@ class Text():
         return max_probability_word
 
 def main():
-    text = Text('big.txt', 2)
+    text = Text('big.txt', 3)
 
-    sentence = 'а еще'
-    for i in range(20):
-        sentence += ' ' + text.next_word(sentence, ('Lid', 1))
+    sentence = 'а еще был'
+    for i in range(10):
+        sentence += ' ' + text.next_word(sentence, ('WB',))
 
     print(sentence)
 
