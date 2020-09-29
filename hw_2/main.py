@@ -58,6 +58,24 @@ class Dictionary():
         if (freq := self.ngrams_freq_dict_list[word_count - 1].get(processed_sentence)) is not None:
             return (freq + l) / (len(self.words) + l * len(self.ngrams_freq_dict_list[word_count - 1]))
         return l / (len(self.words) + l * len(self.ngrams_freq_dict_list[word_count - 1]))
+    
+    def perplexity(self, sentence, n = 1, l = 0):
+        if n > self.n + 1:
+            raise AttributeError('Dictionary has only {:d}-grams'.format(self.n)) 
+
+        splitted_sentence = create_words(sentence)
+        word_count = len(create_words(sentence)) 
+
+        p = 1
+        if n == 1:
+            print(splitted_sentence)
+            p = math.prod([self.P_Lid(word, l) for word in splitted_sentence])    
+        else:
+            for i in range(n - 1, len(splitted_sentence)):
+                p *= self.P_Lid_Cond(splitted_sentence[i], ' '.join(splitted_sentence[i-n+1:i]))
+                     
+        return  (1 / p) ** (1 / word_count) if p > 0 else float('inf') 
+
 
     def P_Lid_Cond(self, word, sentence, l = 0):
         splitted_sentence = create_words(sentence)
@@ -131,13 +149,12 @@ class Text():
         return max_probability_word
 
 def main():
-    text = Text('big.txt', 3)
+    text = Text('stih.txt', 3)
 
-    sentence = 'а еще был'
-    for i in range(10):
-        sentence += ' ' + text.next_word(sentence, ('WB',))
-
-    print(sentence)
+    sentence = 'вот кот'
+    #for i in range(10):
+    #    sentence += ' ' + text.next_word(sentence, ('WB',))
+    print(text.dictionary.perplexity(sentence, n=2))
 
 if __name__ == '__main__':
     main()
