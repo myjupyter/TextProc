@@ -68,11 +68,10 @@ class Dictionary():
 
         p = 1
         if n == 1:
-            print(splitted_sentence)
             p = math.prod([self.P_Lid(word, l) for word in splitted_sentence])    
         else:
             for i in range(n - 1, len(splitted_sentence)):
-                p *= self.P_Lid_Cond(splitted_sentence[i], ' '.join(splitted_sentence[i-n+1:i]))
+                p *= self.P_Lid_Cond(splitted_sentence[i], ' '.join(splitted_sentence[i-n+1:i]),l)
                      
         return  (1 / p) ** (1 / word_count) if p > 0 else float('inf') 
 
@@ -99,25 +98,22 @@ class Dictionary():
             raise AttributeError('Dictionary has only {:d}-grams'.format(self.n))
        
         processed_sentence = ' '.join(splitted_sentence)
-        print('__lambda', processed_sentence)
         C = self.ngrams_freq_dict_list[word_count - 1].get(processed_sentence)
 
         if C is None:
             return 0
 
-        N_1 = sum(map(lambda x: 1 if x[0].startswith(processed_sentence) else 0, self.ngrams_freq_dict_list[word_count]))
+        N_1 = sum(map(lambda x: 1 if x[0].startswith(processed_sentence) else 0, self.ngrams_freq_dict_list[word_count].items()))
         return C / (N_1 + C)
 
-    def P_WB_Cond(self, word, sentence):
-        L = self.__lambda(sentence)
-        
-        print(L)
-        if sentence.count(' ') > 0:
+    def P_WB_Cond(self, word, sentence):   
+        if len(sentence) > 0:
+            L = self.__lambda(sentence)
             splitted_sentence = create_words(sentence)
-            new_sentence = ' '.join(splitted_sentence[-len(splitted_sentence) + 1:])
+            new_sentence = ' '.join(splitted_sentence[-len(splitted_sentence) + 1:]) if len(splitted_sentence) > 1 else '' 
             return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_WB_Cond(word, new_sentence)
         else:
-            return L * self.P_Lid_Cond(word, sentence) + (1 - L) * self.P_Lid(sentence, 1)
+            return  self.P_Lid(word, 1)
 
 
 class Text():
@@ -162,17 +158,28 @@ def main():
         print(word, learn.dictionary.P_Lid(word, l=1))
     print(learn.dictionary.perplexity(' '.join(test.dictionary.words), l=1))
 
+    print('------------------------------------------------')
+    
     for bigram in test.dictionary.ngrams_freq_dict_list[1].keys():
         first_word, second_word = create_words(bigram)
         print(bigram, learn.dictionary.P_WB_Cond(second_word, first_word))
-    print(learn.dictionary.perplexity(' '.join(test.dictionary.words), n=2, l=1))
+    print(learn.dictionary.perplexity(' '.join(test.dictionary.words), n=2)) 
     
+    print('------------------------------------------------')
     
-    ##sentence = 'вот кот'
-    ##for i in range(5):
-    ##    sentence += ' ' + text.next_word(sentence, ('WB',))    
-    ##print(sentence)
-    ##print(text.dictionary.perplexity(sentence, n=2))
+    for trigram in test.dictionary.ngrams_freq_dict_list[2].keys():
+        words = create_words(trigram)
+        print(trigram, learn.dictionary.P_WB_Cond(words[0], ' '.join(words[:-1])))
+    print(learn.dictionary.perplexity(' '.join(test.dictionary.words), n=3)) 
+    
+    print('------------------------------------------------')
+
+    text = Text('stih.txt', 2)
+    sentence = 'А это'
+    for i in range(20):
+        sentence += ' ' + text.next_word(sentence, ('WB',))    
+    print(sentence)
+    print(text.dictionary.perplexity(sentence, n=2))
 
 if __name__ == '__main__':
     main()
