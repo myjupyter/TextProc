@@ -149,37 +149,31 @@ class Text():
     @property 
     def words(self):
         return self.dictionary.dictionary
+    
+    def make_stat_to_csv(self, ngram_size, other_text): 
+        for n in range(1, ngram_size + 1): 
+            with open(str(n) + '-gramm.csv', 'w') as file:
+                file.write(str(n) + '-gramm;P(w|w1...wn)\n')
+                for ngram in other_text.dictionary.ngrams_freq_dict_list[n-1].keys(): 
+                    if n == 0:
+                        file.write('{:s};{:3f}\n'.format(ngram, self.dictionary.P_Lid(ngram, 1)))
+                    else:
+                        words = create_words(ngram)
+                        file.write('{:s};{:3f}\n'.format(ngram, self.dictionary.P_WB_Cond(words[0], ' '.join(words[:-1]))))        
 
 def main():
-    learn = Text('learn.txt', 2)
-    test = Text('test.txt', 2)
+    learn = Text('learn.txt', 5)
+    test = Text('test.txt', 5)
 
-    for word in test.words:
-        print(word, learn.dictionary.P_Lid(word, l=1))
-    print(learn.dictionary.perplexity(' '.join(test.dictionary.words), l=1))
+    # Запись статистики
+    learn.make_stat_to_csv( 5, test)
 
-    print('------------------------------------------------')
-    
-    for bigram in test.dictionary.ngrams_freq_dict_list[1].keys():
-        first_word, second_word = create_words(bigram)
-        print(bigram, learn.dictionary.P_WB_Cond(second_word, first_word))
-    print(learn.dictionary.perplexity(' '.join(test.dictionary.words), n=2)) 
-    
-    print('------------------------------------------------')
-    
-    for trigram in test.dictionary.ngrams_freq_dict_list[2].keys():
-        words = create_words(trigram)
-        print(trigram, learn.dictionary.P_WB_Cond(words[0], ' '.join(words[:-1])))
-    print(learn.dictionary.perplexity(' '.join(test.dictionary.words), n=3)) 
-    
-    print('------------------------------------------------')
-
+    # Пример генерации текста
     text = Text('stih.txt', 2)
     sentence = 'А это'
     for i in range(20):
         sentence += ' ' + text.next_word(sentence, ('WB',))    
     print(sentence)
-    print(text.dictionary.perplexity(sentence, n=2))
 
 if __name__ == '__main__':
     main()
