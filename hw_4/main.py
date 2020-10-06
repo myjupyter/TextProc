@@ -24,18 +24,27 @@ SENT = 'Time flies like an arrow'
 def prior_vector(word, past_part):
     return {part: PROBS[word][part] * conf_prob for part, conf_prob in COND_PROB[past_part].items()}
 
-def stage(word, past_part, past_stage):
-    return {part : max([prob * COND_PROB[past_part][part] for part, prob in past_stage.items()]) * conf_prob for part, conf_prob in COND_PROB[past_part].items()}
+def new_stage(word, past_part, past_stage):
+    return {part : max([pp * COND_PROB[p][part] for p, pp in past_stage.items()]) * conf_prob for part, conf_prob in COND_PROB[past_part].items()}
 
 def text_proc(text):
-    splitted_text = ['<s>']
-    splitted_text.extend(text.lower().split())
-    return splitted_text
+    return text.lower().split()
+
+def Viterbi(text):
+    text = text_proc(text)
+    stage = prior_vector(text[0], '<s>')
+    
+    hidden_state = [max(stage.items(), key=lambda x: x[1])[0]]
+    del text[0]
+    for word in text:
+        stage = new_stage(word, hidden_state[-1], stage)
+        hidden_state.append(max(stage.items(), key=lambda x: x[1])[0])
+
+    return hidden_state
 
 def main():
-    print(text_proc(SENT))    
-    p = prior_vector('time', '<s>')
-    print(stage('flies', max(p.items(), key=lambda x: x[1])[0], p)) 
+    hs = Viterbi(SENT)
+    print(hs)
 
 if __name__ == '__main__':
     main()
