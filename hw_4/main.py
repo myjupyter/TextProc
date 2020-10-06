@@ -25,7 +25,7 @@ def prior_vector(word, past_part):
     return {part: PROBS[word][part] * conf_prob for part, conf_prob in COND_PROB[past_part].items()}
 
 def new_stage(word, past_part, past_stage):
-    return {part : max([pp * COND_PROB[p][part] for p, pp in past_stage.items()]) * conf_prob for part, conf_prob in COND_PROB[past_part].items()}
+    return {part : max([past_stage[p] * COND_PROB[past_part][part] for p in past_stage.keys()]) * prob for part, prob in PROBS[word].items()}
 
 def text_proc(text):
     return text.lower().split()
